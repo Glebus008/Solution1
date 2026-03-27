@@ -6,56 +6,64 @@ namespace SoilTestApp
 {
     public partial class Form1 : Form
     {
+        // Храним накопленные итоги в памяти класса
+        double totalSettlement = 0;
+        double totalMinutes = 0;
+        double? lastSavg = null;
+
         public Form1()
         {
             InitializeComponent();
+            txtDate.Text = DateTime.Now.ToString("dd.MM.yyyy"); // Предзаполнение даты
         }
 
-        private void btnCalculate_Click(object sender, EventArgs e)
+        private void btnAddAndCalculate_Click(object sender, EventArgs e)
         {
-            double totalSettlement = 0;
-            double totalMinutes = 0;
-            double? previousSavg = null;
-
-            foreach (DataGridViewRow row in dgvMeasurements.Rows)
+            try
             {
-                if (row.IsNewRow) continue;
+                // Читаем данные из текстбоксов
+                double interval = ParseDouble(txtInterval.Text);
+                double load = ParseDouble(txtLoad.Text);
+                double s1 = ParseDouble(txtS1.Text);
+                double s2 = ParseDouble(txtS2.Text);
 
-                // 1. Считаем суммарное время (из колонки Интервал)
-                var intervalVal = row.Cells["Interval"].Value;
-                if (intervalVal != null)
+                // 1. Считаем время
+                totalMinutes += interval;
+
+                // 2. Считаем осадку
+                double currentSavg = (s1 + s2) / 2.0;
+                double deltaS = 0;
+
+                if (lastSavg.HasValue)
                 {
-                    totalMinutes += ParseDouble(intervalVal.ToString());
-                    row.Cells["TotalTime"].Value = totalMinutes.ToString();
+                    deltaS = Math.Abs(lastSavg.Value - currentSavg);
                 }
 
-                // 2. Считаем осадку (из колонок S1 и S2)
-                var s1Val = row.Cells["S1"].Value;
-                var s2Val = row.Cells["S2"].Value;
+                totalSettlement += deltaS;
+                lastSavg = currentSavg;
 
-                if (s1Val != null && s2Val != null)
-                {
-                    double s1 = ParseDouble(s1Val.ToString());
-                    double s2 = ParseDouble(s2Val.ToString());
+                // 3. Добавляем строку в таблицу
+                dgvMeasurements.Rows.Add(
+                    txtDate.Text,
+                    txtTime.Text,
+                    interval,
+                    load,
+                    s1,
+                    s2,
+                    currentSavg.ToString("F3"),
+                    deltaS.ToString("F3"),
+                    totalSettlement.ToString("F3"),
+                    totalMinutes.ToString()
+                );
 
-                    // Среднее
-                    double currentSavg = (s1 + s2) / 2.0;
-                    row.Cells["Savg"].Value = currentSavg.ToString("F3");
-
-                    // Приращение (разница с прошлой строкой)
-                    double deltaS = 0;
-                    if (previousSavg.HasValue)
-                    {
-                        deltaS = Math.Abs(previousSavg.Value - currentSavg);
-                    }
-                    row.Cells["DeltaS"].Value = deltaS.ToString("F3");
-
-                    // Общая сумма осадки
-                    totalSettlement += deltaS;
-                    row.Cells["SumS"].Value = totalSettlement.ToString("F3");
-
-                    previousSavg = currentSavg;
-                }
+                // Очищаем поля S1 и S2 для следующего замера, время и интервал оставляем для удобства
+                txtS1.Clear();
+                txtS2.Clear();
+                txtS1.Focus(); // Ставим курсор обратно на S1
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Проверьте правильность ввода чисел!", "Ошибка");
             }
         }
 
