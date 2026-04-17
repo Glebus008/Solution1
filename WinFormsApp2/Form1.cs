@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.Globalization;
-
 namespace SoilTestApp
 {
     public partial class Form1 : Form
@@ -50,7 +49,6 @@ namespace SoilTestApp
 
                 // 1. Считаем суммарное время
                 totalMinutes += interval;
-
                 // 2. Считаем осадку
                 double currentSavg = (s1 + s2) / 2.0;
                 double deltaS = 0;
